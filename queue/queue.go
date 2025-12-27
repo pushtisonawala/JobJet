@@ -39,10 +39,10 @@ func (q *RedisQueue) Push(job models.Jobs) error {
 
 	err = q.client.LPush(ctx, "job_queue", data).Err()
 	if err != nil {
-		fmt.Println("❌ Failed to push job:", err)
+		fmt.Println("Failed to push job:", err)
 		return err
 	}
 
-	fmt.Println("✅ Job pushed to Redis:", string(data))
+	fmt.Println("Job pushed to Redis:", string(data))
 	return nil
 }

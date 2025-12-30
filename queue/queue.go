@@ -17,7 +17,7 @@ type RedisQueue struct {
 
 func NewRedisQueue() *RedisQueue {
 	rdx := redis.NewClient(&redis.Options{
-    Addr: "redis:6379", 
+    Addr: "localhost:6379", 
 	})
 
 	pong, err := rdx.Ping(ctx).Result()

@@ -13,56 +13,77 @@ import (
 
 var ctx = context.Background()
 
+const maxWorkers = 5
+
 func main() {
-	fmt.Println("👷 Worker started")
+	fmt.Println("👷 Worker started with concurrency")
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
 	})
 
+	// Semaphore to limit concurrent jobs
+	semaphore := make(chan struct{}, maxWorkers)
+
 	for {
-		// Fetch job from job_queue and move to processing_queue atomically
+		// Fetch job atomically
 		result, err := rdb.BRPopLPush(ctx, "job_queue", "processing_queue", 0).Result()
 		if err != nil {
 			fmt.Println("Error fetching job:", err)
 			continue
 		}
 
-		var job models.Jobs
-		json.Unmarshal([]byte(result), &job)
+		// Acquire worker slot
+		semaphore <- struct{}{}
 
-		fmt.Println("⚙️ Processing job:", job.ID)
+		// Process job concurrently
+		go func(jobData string) {
+			defer func() {
+				<-semaphore // Release slot
+			}()
 
-		// Simulate job failure for demonstration
-		isFailed := job.Type == "fail"
+			processJob(rdb, jobData)
+		}(result)
+	}
+}
 
-		if isFailed {
-			if job.RetryCount < job.MaxRetry {
-				job.RetryCount++
-				fmt.Printf("🔄 Retry #%d for job: %s\n", job.RetryCount, job.ID)
+func processJob(rdb *redis.Client, result string) {
+	var job models.Jobs
+	json.Unmarshal([]byte(result), &job)
 
-				delay := time.Duration(math.Pow(2, float64(job.RetryCount))) * time.Second
-				time.Sleep(delay)
+	fmt.Println("⚙️ Processing job:", job.ID)
 
-				// Push back to job_queue for retry
-				data, _ := json.Marshal(job)
-				rdb.LPush(ctx, "job_queue", data)
-			} else {
-				fmt.Println("☠️ Max retries reached, moving job to DLQ:", job.ID)
-				data, _ := json.Marshal(job)
-				rdb.LPush(ctx, "dlq", data) // Dead Letter Queue
-			}
+	// Simulate failure
+	if job.Type == "fail" {
+		if job.RetryCount < job.MaxRetry {
+			job.RetryCount++
+			fmt.Printf("🔄 Retry #%d for job: %s\n", job.RetryCount, job.ID)
 
-			// Remove from processing queue
-			rdb.LRem(ctx, "processing_queue", 1, result)
-			continue
+			retryAt := time.Now().
+				Add(time.Duration(math.Pow(2, float64(job.RetryCount))) * time.Second).
+				Unix()
+
+			data, _ := json.Marshal(job)
+
+			rdb.ZAdd(ctx, "retry_zset", redis.Z{
+				Score:  float64(retryAt),
+				Member: data,
+			})
+		} else {
+			fmt.Println("☠️ Max retries reached → DLQ:", job.ID)
+			data, _ := json.Marshal(job)
+			rdb.LPush(ctx, "dlq", data)
 		}
 
-		// Simulate processing time
-		time.Sleep(2 * time.Second)
-
-		// Job completed successfully
+		// Acknowledge
 		rdb.LRem(ctx, "processing_queue", 1, result)
-		fmt.Println("✅ Job completed:", job.ID)
+		return
 	}
+
+	// Simulate work
+	time.Sleep(2 * time.Second)
+
+	// Success
+	rdb.LRem(ctx, "processing_queue", 1, result)
+	fmt.Println("✅ Job completed:", job.ID)
 }

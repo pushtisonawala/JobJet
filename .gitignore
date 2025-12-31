@@ -1,0 +1,20 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Build output
+bin/
+out/
+
+# Vendor (if using Go modules)
+vendor/
+
+# Environment files
+.env
+
+# IDE/editor files
+*.swp
+*.vscode/

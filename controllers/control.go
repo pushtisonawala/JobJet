@@ -3,7 +3,8 @@ package controllers
 import (
 	"net/http"
 	"time"
-    "fmt"
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
@@ -14,8 +15,8 @@ import (
 func CreateJobs(c *gin.Context) {
 
 	var req struct {
-		Type    string `json:"type"`
-		Payload map[string]interface{} `json:"payload"`
+		Type    string              `json:"type"`
+		Payload models.EmailPayload `json:"payload"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -28,20 +29,23 @@ func CreateJobs(c *gin.Context) {
 	job := models.Jobs{
 		ID:        uuid.New().String(),
 		Type:      req.Type,
-		Payload:   req.Payload,
+		Payload:   req.Payload, 
 		Status:    "pending",
+		MaxRetry:  3,
 		CreatedAt: time.Now(),
 	}
 
 	q := queue.NewRedisQueue()
-
 fmt.Println("Controller reached, job ID:", job.ID)
-	if err := q.Push(job); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "failed to queue job",
-		})
-		return
-	}
+
+err := q.Push(job)
+if err != nil {
+	fmt.Println("❌ Job push failed for job ID:", job.ID, "Error:", err)
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to queue job"})
+	return
+}
+
+
 
 	c.JSON(http.StatusAccepted, gin.H{
 		"message": "job queued",

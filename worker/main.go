@@ -27,6 +27,8 @@ func main() {
 	})
 
 	semaphore := make(chan struct{}, maxWorkers)
+		go retryScheduler(rdb)
+
 
 	for {
 		result, err := rdb.BRPopLPush(ctx, "job_queue", "processing_queue", 0).Result()
@@ -46,6 +48,30 @@ func main() {
 		}(result)
 	}
 }
+func retryScheduler(rdb *redis.Client) {
+	fmt.Println("⏰ Retry scheduler started")
+	for {
+		now := float64(time.Now().Unix())
+		jobs, err := rdb.ZRangeByScore(ctx, "retry_zset", &redis.ZRangeBy{
+			Min: "0",
+			Max: fmt.Sprintf("%f", now),
+		}).Result()
+		if err != nil {
+			fmt.Println(" Retry scheduler error:", err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		for _, j := range jobs {
+			rdb.LPush(ctx, "job_queue", j)
+			rdb.ZRem(ctx, "retry_zset", j)
+			fmt.Println("Job moved from retry_zset to job_queue:", j)
+		}
+
+		time.Sleep(1 * time.Second) 
+	}
+}
+
 func processJob(rdb *redis.Client, result string) {
 	var job models.Jobs
 	err := json.Unmarshal([]byte(result), &job)

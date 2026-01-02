@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/redis/go-redis/v9"
 	"jobqueue/models"
+
+	"github.com/redis/go-redis/v9"
 )
 
 var ctx = context.Background()
@@ -17,7 +18,7 @@ type RedisQueue struct {
 
 func NewRedisQueue() *RedisQueue {
 	rdx := redis.NewClient(&redis.Options{
-    Addr: "redis:6379", 
+		Addr: "localhost:6379", // Use localhost for local development
 	})
 
 	pong, err := rdx.Ping(ctx).Result()

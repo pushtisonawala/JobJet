@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -15,7 +19,10 @@ import (
 	"jobqueue/utils"
 )
 
-var ctx = context.Background()
+var ctx context.Context
+var cancel context.CancelFunc
+var wg sync.WaitGroup
+var shuttingDown bool
 
 const maxWorkers = 5
 
@@ -26,38 +33,58 @@ func main() {
 		Addr: "localhost:6379",
 	})
 
+	ctx, cancel = context.WithCancel(context.Background())
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		fmt.Println("Shutdown signal received")
+		shuttingDown = true
+		cancel()
+		restoreProcessingJobs(rdb)
+		wg.Wait()
+		fmt.Println("Worker exited cleanly")
+		os.Exit(0)
+	}()
+
 	semaphore := make(chan struct{}, maxWorkers)
-		go retryScheduler(rdb)
+	go retryScheduler(rdb)
 
-
-	for {
+	for !shuttingDown {
 		result, err := rdb.BRPopLPush(ctx, "job_queue", "processing_queue", 0).Result()
 		if err != nil {
+			if err == context.Canceled {
+				continue
+			}
 			fmt.Println("❌ Error fetching job:", err)
 			continue
 		}
 
 		semaphore <- struct{}{}
+		wg.Add(1)
 
 		go func(jobData string) {
 			defer func() {
 				<-semaphore
+				wg.Done()
 			}()
 
 			processJob(rdb, jobData)
 		}(result)
 	}
 }
+
 func retryScheduler(rdb *redis.Client) {
 	fmt.Println("⏰ Retry scheduler started")
-	for {
+	for !shuttingDown {
 		now := float64(time.Now().Unix())
 		jobs, err := rdb.ZRangeByScore(ctx, "retry_zset", &redis.ZRangeBy{
 			Min: "0",
 			Max: fmt.Sprintf("%f", now),
 		}).Result()
 		if err != nil {
-			fmt.Println(" Retry scheduler error:", err)
+			fmt.Println("Retry scheduler error:", err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -68,7 +95,22 @@ func retryScheduler(rdb *redis.Client) {
 			fmt.Println("Job moved from retry_zset to job_queue:", j)
 		}
 
-		time.Sleep(1 * time.Second) 
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func restoreProcessingJobs(rdb *redis.Client) {
+	fmt.Println("♻️ Restoring in-flight jobs")
+	for {
+		job, err := rdb.RPopLPush(ctx, "processing_queue", "job_queue").Result()
+		if err == redis.Nil {
+			break
+		}
+		if err != nil {
+			fmt.Println("Restore error:", err)
+			break
+		}
+		fmt.Println("↩️ Restored job:", job)
 	}
 }
 
@@ -85,7 +127,6 @@ func processJob(rdb *redis.Client, result string) {
 
 	coll := db.Client.Database("jobqueue").Collection("jobs")
 
-	// HANDLE EMAIL JOBS
 	if job.Type == "email" {
 		err := utils.SendEmail(
 			job.Payload.To,
@@ -119,9 +160,7 @@ func processJob(rdb *redis.Client, result string) {
 
 	// FAILURE CASE (retry logic)
 	if job.Type == "fail" {
-
 		if job.RetryCount < job.MaxRetry {
-
 			// 🔔 Send email for retry
 			err = utils.SendEmail(
 				job.Payload.To, // use job payload if you want real email
@@ -158,7 +197,6 @@ func processJob(rdb *redis.Client, result string) {
 			if err != nil {
 				fmt.Println("❌ Mongo update failed:", err)
 			}
-
 		} else {
 			fmt.Println("☠️ Max retries reached → DLQ:", job.ID)
 

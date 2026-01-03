@@ -1,14 +1,14 @@
 package main
 
 import (
-    "fmt"
+"jobqueue/logger"
     "jobqueue/db"
     "jobqueue/worker"
     "github.com/redis/go-redis/v9"
 )
 
 func main() {
-    fmt.Println("👷 Worker started with concurrency")
+    logger.Log.Info("Worker started with concurrency")
     db.ConnectMongo() 
     rdb := redis.NewClient(&redis.Options{
         Addr: "localhost:6379",

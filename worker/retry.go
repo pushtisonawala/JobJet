@@ -3,13 +3,14 @@ package worker
 import (
 	"context"
 	"fmt"
+	"jobqueue/logger"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
 func RetryScheduler(ctx context.Context, rdb *redis.Client, shuttingDown *bool) {
-	fmt.Println("⏰ Retry scheduler started")
+	logger.Log.Info("Retry scheduler started")
 	for !*shuttingDown {
 		now := float64(time.Now().Unix())
 		jobs, err := rdb.ZRangeByScore(ctx, "retry_zset", &redis.ZRangeBy{
@@ -17,7 +18,7 @@ func RetryScheduler(ctx context.Context, rdb *redis.Client, shuttingDown *bool) 
 			Max: fmt.Sprintf("%f", now),
 		}).Result()
 		if err != nil {
-			fmt.Println("Retry scheduler error:", err)
+			logger.Log.Error("Retry scheduler error:", "error", err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -25,7 +26,7 @@ func RetryScheduler(ctx context.Context, rdb *redis.Client, shuttingDown *bool) 
 		for _, j := range jobs {
 			rdb.LPush(ctx, "job_queue", j)
 			rdb.ZRem(ctx, "retry_zset", j)
-			fmt.Println("Job moved from retry_zset to job_queue:", j)
+			logger.Log.Info("Job moved from retry_zset to job_queue", "job", j)
 		}
 
 		time.Sleep(1 * time.Second)

@@ -3,12 +3,13 @@ package worker
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"jobqueue/db"
 	"jobqueue/models"
 	"jobqueue/utils"
 	"math"
 	"time"
+	"fmt"
+	"jobqueue/logger"
 
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,12 +19,12 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) {
 	var job models.Jobs
 	err := json.Unmarshal([]byte(jobData), &job)
 	if err != nil {
-		fmt.Println("❌ Invalid job JSON:", err)
+		logger.Log.Error(" Invalid job JSON:","error",err)
 		rdb.LRem(ctx, "processing_queue", 1, jobData)
 		return
 	}
 
-	fmt.Println("⚙️ Processing job:", job.ID)
+	fmt.Println(" Processing job:", job.ID)
 	coll := db.Client.Database("jobqueue").Collection("jobs")
 
 	if job.Type == "email" {
@@ -33,9 +34,9 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) {
 			job.Payload.Body,
 		)
 		if err != nil {
-			fmt.Println("❌ Email failed:", err)
+			logger.Log.Error("Email failed:","error", err)
 		} else {
-			fmt.Println("📧 Email sent successfully to", job.Payload.To)
+			logger.Log.Info("Email sent successfully", "to", job.Payload.To)
 		}
 
 		_, err = coll.UpdateOne(ctx,
@@ -43,11 +44,11 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) {
 			bson.M{"$set": bson.M{"status": "completed", "updated_at": time.Now()}},
 		)
 		if err != nil {
-			fmt.Println("❌ Mongo update failed:", err)
+			logger.Log.Error(" Mongo update failed:","error", err)
 		}
 
 		rdb.LRem(ctx, "processing_queue", 1, jobData)
-		fmt.Println("✅ Job completed:", job.ID)
+		fmt.Println("Job completed:", job.ID)
 		return
 	}
 
@@ -59,7 +60,7 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) {
 				fmt.Sprintf("Job %s failed. Retry attempt #%d", job.ID, job.RetryCount+1),
 			)
 			if err != nil {
-				fmt.Println("❌ Email failed:", err)
+				fmt.Println("Email failed:", err)
 			}
 
 			job.RetryCount++
@@ -72,10 +73,10 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) {
 				bson.M{"$set": bson.M{"status": "retrying", "retry_count": job.RetryCount, "updated_at": time.Now()}},
 			)
 			if err != nil {
-				fmt.Println("❌ Mongo update failed:", err)
+				logger.Log.Error("Mongo update failed:","error", err)
 			}
 		} else {
-			fmt.Println("☠️ Max retries reached → DLQ:", job.ID)
+			logger.Log.Info("☠️ Max retries reached → DLQ:", "jobID", job.ID)
 			data, _ := json.Marshal(job)
 			rdb.LPush(ctx, "dlq", data)
 			_, err = coll.UpdateOne(ctx,
@@ -83,13 +84,13 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) {
 				bson.M{"$set": bson.M{"status": "failed", "updated_at": time.Now()}},
 			)
 			if err != nil {
-				fmt.Println("❌ Mongo update failed:", err)
+				logger.Log.Error(" update failed:","error", err)
 			}
 		}
 		rdb.LRem(ctx, "processing_queue", 1, jobData)
 		return
 	}
 
-	fmt.Println("⚠️ Unknown job type:", job.Type)
+	logger.Log.Info("Unknown job type:", "type", job.Type)
 	rdb.LRem(ctx, "processing_queue", 1, jobData)
 }

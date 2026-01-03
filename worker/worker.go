@@ -2,12 +2,11 @@ package worker
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
-
+"jobqueue/logger"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -37,11 +36,11 @@ func (w *Worker) Start(mainLoop func(jobData string)) {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigChan
-		fmt.Println("Shutdown signal received")
+		logger.Log.Info("shutdown signal recieved")
 		w.ShuttingDown = true
 		w.cancel()
 		w.wg.Wait()
-		fmt.Println("Worker exited cleanly")
+		logger.Log.Info("Worker exited cleanly")
 		os.Exit(0)
 	}()
 
@@ -51,7 +50,7 @@ func (w *Worker) Start(mainLoop func(jobData string)) {
 			if err == context.Canceled {
 				continue
 			}
-			fmt.Println("❌ Error fetching job:", err)
+			logger.Log.Error("Error fetching job:","error", err)
 			continue
 		}
 

@@ -2,7 +2,7 @@ package db
 
 import (
 	"context"
-	"log"
+	"jobqueue/logger"
 	"os"
 	"time"
 
@@ -16,12 +16,14 @@ var Client *mongo.Client
 func ConnectMongo() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("❌ Error loading .env file")
+		logger.Log.Error(" Error loading .env file")
+		os.Exit(1)
 	}
 
 	uri := os.Getenv("MONGO_URI")
 	if uri == "" {
-		log.Fatal("❌ MONGO_URI not found in env")
+		logger.Log.Error(" MONGO_URI not found in env")
+		os.Exit(1)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -29,9 +31,10 @@ func ConnectMongo() {
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
-		log.Fatal("❌ Mongo connection failed:", err)
+		logger.Log.Error(" Mongo connection failed:","error", err)
+		os.Exit(1)
 	}
 
 	Client = client
-	log.Println("✅ MongoDB connected")
+	logger.Log.Info(" MongoDB connected")
 }

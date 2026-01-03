@@ -13,7 +13,6 @@ func SendEmail(to,subject, body string) error {
 	pass := os.Getenv("SMTP_PASS")
 
 	from := os.Getenv("EMAIL_FROM")
-	// toEmail := os.Getenv("EMAIL_TO")
 	addr:=host+":"+port
 	auth:=smtp.PlainAuth("",user,pass,host)
 	msg := []byte(

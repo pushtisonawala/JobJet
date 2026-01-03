@@ -3,8 +3,7 @@ package queue
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-
+"jobqueue/logger"
 	"jobqueue/models"
 
 	"github.com/redis/go-redis/v9"
@@ -25,7 +24,7 @@ func NewRedisQueue() *RedisQueue {
 	if err != nil {
 		panic("REDIS CONNECTION FAILED: " + err.Error())
 	}
-	fmt.Println("✅ Redis connected:", pong)
+	logger.Log.Info("✅ Redis connected", "pong", pong)
 
 	return &RedisQueue{
 		client: rdx,
@@ -33,23 +32,22 @@ func NewRedisQueue() *RedisQueue {
 }
 func (q *RedisQueue) Push(job models.Jobs) error {
 	// 1️⃣ Log the job you're about to push
-	fmt.Println("📤 Attempting to push job to Redis:", job.ID)
+	logger.Log.Info("Attempting to push job to Redis:","jobID", job.ID)
 
 	// 2️⃣ Convert job struct to JSON
 	data, err := json.Marshal(job)
 	if err != nil {
-		fmt.Println("❌ Failed to marshal job:", err)
+		logger.Log.Error(" Failed to marshal job:","error", err)
 		return err
 	}
 
 	// 3️⃣ Push job to Redis list
 	err = q.client.LPush(ctx, "job_queue", data).Err()
 	if err != nil {
-		fmt.Println("❌ Failed to push job to Redis:", err)
+		logger.Log.Error("Failed to push job to Redis:","error", err)
 		return err
 	}
 
-	// 4️⃣ Success log
-	fmt.Println("✅ Job pushed successfully:", string(data))
+	logger.Log.Info("Job pushed successfully", "jobData", string(data))
 	return nil
 }

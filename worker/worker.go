@@ -7,6 +7,7 @@ import (
 	"sync"
 	"syscall"
 "jobqueue/logger"
+"jobqueue/metrics"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -53,6 +54,8 @@ func (w *Worker) Start(mainLoop func(jobData string)) {
 			logger.Log.Error("Error fetching job:","error", err)
 			continue
 		}
+		metrics.ProcessingQueueLength.Inc()
+		metrics.JobQueueLength.Dec()
 
 		w.semaphore <- struct{}{}
 		w.wg.Add(1)

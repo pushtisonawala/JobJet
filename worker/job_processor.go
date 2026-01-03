@@ -3,13 +3,14 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"jobqueue/db"
+	"jobqueue/logger"
+	"jobqueue/metrics"
 	"jobqueue/models"
 	"jobqueue/utils"
 	"math"
 	"time"
-	"fmt"
-	"jobqueue/logger"
 
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
@@ -49,6 +50,8 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) {
 
 		rdb.LRem(ctx, "processing_queue", 1, jobData)
 		fmt.Println("Job completed:", job.ID)
+		metrics.JobsProcessed.Inc()
+		metrics.ProcessingQueueLength.Dec()
 		return
 	}
 
@@ -62,11 +65,15 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) {
 			if err != nil {
 				fmt.Println("Email failed:", err)
 			}
+			metrics.JobsFailed.Inc()
+			metrics.JobsRetried.Inc()
 
 			job.RetryCount++
 			retryAt := time.Now().Add(time.Duration(math.Pow(2, float64(job.RetryCount))) * time.Second).Unix()
 			data, _ := json.Marshal(job)
 			rdb.ZAdd(ctx, "retry_zset", redis.Z{Score: float64(retryAt), Member: data})
+			metrics.RetryQueueLength.Inc()
+
 
 			_, err = coll.UpdateOne(ctx,
 				bson.M{"id": job.ID},
@@ -83,6 +90,8 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) {
 				bson.M{"id": job.ID},
 				bson.M{"$set": bson.M{"status": "failed", "updated_at": time.Now()}},
 			)
+			metrics.DLQLength.Inc()
+			metrics.DLQLength.Inc()
 			if err != nil {
 				logger.Log.Error(" update failed:","error", err)
 			}

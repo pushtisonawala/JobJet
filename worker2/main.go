@@ -1,12 +1,14 @@
 package main
 
 import (
+	"jobqueue/controllers"
 	"jobqueue/db"
 	"jobqueue/logger"
 	"jobqueue/metrics"
 	"jobqueue/worker"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
 )
@@ -28,6 +30,15 @@ func main() {
 	})
 
 	w := worker.NewWorker(5, rdb)
+
+	// Admin API endpoints
+	adminRouter := gin.Default()
+	adminRouter.SetTrustedProxies([]string{"127.0.0.1"})
+	adminController := controllers.NewAdminController(rdb, w)
+	adminRouter.GET("/admin/status", adminController.Status)
+	adminRouter.POST("/admin/pause", adminController.Pause)
+	adminRouter.POST("/admin/resume", adminController.Resume)
+	go adminRouter.Run(":8001")
 
 	go worker.RetryScheduler(w.Ctx, rdb)
 

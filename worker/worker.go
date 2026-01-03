@@ -18,6 +18,7 @@ type Worker struct {
 	MaxWorkers int
 	Rdb        *redis.Client
 	wg         sync.WaitGroup
+	Paused     bool
 }
 
 func NewWorker(maxWorkers int, rdb *redis.Client) *Worker {
@@ -28,6 +29,18 @@ func NewWorker(maxWorkers int, rdb *redis.Client) *Worker {
 		MaxWorkers: maxWorkers,
 		Rdb:        rdb,
 	}
+}
+
+// Pause the worker
+func (w *Worker) Pause() {
+	w.Paused = true
+	logger.Log.Info("Worker paused")
+}
+
+// Resume the worker
+func (w *Worker) Resume() {
+	w.Paused = false
+	logger.Log.Info("Worker resumed")
 }
 
 func (w *Worker) Start(processFunc func(string) error) {
@@ -51,6 +64,12 @@ func (w *Worker) Start(processFunc func(string) error) {
 			logger.Log.Info("Worker shutting down")
 			return
 		default:
+		}
+
+		// If paused, skip fetching jobs
+		if w.Paused {
+			time.Sleep(500 * time.Millisecond)
+			continue
 		}
 
 		job, err := w.Rdb.BRPopLPush(

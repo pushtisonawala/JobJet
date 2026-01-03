@@ -31,7 +31,7 @@ func main() {
 			metrics.ProcessingQueueLength.Set(float64(procLen))
 			retryLen, _ := q.Client().ZCard(context.Background(), "retry_zset").Result()
 			metrics.RetryQueueLength.Set(float64(retryLen))
-			dlqLen, _ := q.Client().LLen(context.Background(), "dlq").Result()
+			dlqLen, _ := q.Client().LLen(context.Background(), "dlq_queue").Result()
 			metrics.DLQLength.Set(float64(dlqLen))
 			time.Sleep(5 * time.Second)
 		}

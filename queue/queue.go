@@ -19,6 +19,7 @@ type RedisQueue struct {
 func NewRedisQueue() *RedisQueue {
 	rdx := redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
+		DB:   0,
 	})
 
 	pong, err := rdx.Ping(ctx).Result()
@@ -27,21 +28,19 @@ func NewRedisQueue() *RedisQueue {
 	}
 	logger.Log.Info("✅ Redis connected", "pong", pong)
 
-	return &RedisQueue{
-		client: rdx,
-	}
+	return &RedisQueue{client: rdx}
 }
+
 func (q *RedisQueue) Push(job models.Jobs) error {
 	logger.Log.Info("Attempting to push job to Redis:", "jobID", job.ID)
 
 	data, err := json.Marshal(job)
 	if err != nil {
-		logger.Log.Error(" Failed to marshal job:", "error", err)
+		logger.Log.Error("Failed to marshal job:", "error", err)
 		return err
 	}
 
-	err = q.client.LPush(ctx, "job_queue", data).Err()
-	if err != nil {
+	if err := q.client.LPush(ctx, "job_queue", data).Err(); err != nil {
 		logger.Log.Error("Failed to push job to Redis:", "error", err)
 		return err
 	}

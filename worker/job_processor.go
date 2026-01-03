@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"jobqueue/db"
 	"jobqueue/logger"
 	"jobqueue/metrics"
@@ -16,90 +15,130 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) {
+func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) error {
 	var job models.Jobs
-	err := json.Unmarshal([]byte(jobData), &job)
-	if err != nil {
-		logger.Log.Error(" Invalid job JSON:","error",err)
+
+	// DEBUG: Entry point tracking
+	logger.Log.Info("ProcessJob ENTERED", "raw", jobData)
+
+	// ALWAYS cleanup processing_queue exactly once, even on panic
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Log.Error("Panic recovered in ProcessJob", "panic", r, "job", jobData)
+			// Move panicked job to DLQ
+			rdb.LPush(ctx, "dlq_queue", jobData)
+			metrics.JobsFailed.Inc()
+			metrics.JobsDLQ.Inc()
+		}
 		rdb.LRem(ctx, "processing_queue", 1, jobData)
-		return
+		UpdateQueueMetrics(ctx, rdb)
+	}()
+
+	// ----------------- JSON PARSE -----------------
+	if err := json.Unmarshal([]byte(jobData), &job); err != nil {
+		logger.Log.Error("Invalid job JSON", "error", err)
+
+		// Move invalid JSON to DLQ
+		rdb.LPush(ctx, "dlq_queue", jobData)
+
+		metrics.JobsFailed.Inc()
+		metrics.JobsDLQ.Inc()
+		return err
 	}
 
-	fmt.Println(" Processing job:", job.ID)
+	logger.Log.Info("Processing job", "jobID", job.ID)
 	coll := db.Client.Database("jobqueue").Collection("jobs")
 
+	// ----------------- EMAIL JOB -----------------
 	if job.Type == "email" {
-		err := utils.SendEmail(
-			job.Payload.To,
-			job.Payload.Subject,
-			job.Payload.Body,
-		)
-		if err != nil {
-			logger.Log.Error("Email failed:","error", err)
-		} else {
-			logger.Log.Info("Email sent successfully", "to", job.Payload.To)
+		if err := utils.SendEmail(job.Payload.To, job.Payload.Subject, job.Payload.Body); err != nil {
+			logger.Log.Error("Email failed", "error", err)
+
+			// Move to DLQ on email failure
+			data, _ := json.Marshal(job)
+			rdb.LPush(ctx, "dlq_queue", data)
+
+			coll.UpdateOne(ctx,
+				bson.M{"id": job.ID},
+				bson.M{"$set": bson.M{"status": "dlq", "error": err.Error(), "updated_at": time.Now()}},
+			)
+
+			metrics.JobsFailed.Inc()
+			metrics.JobsDLQ.Inc()
+			return err
 		}
 
-		_, err = coll.UpdateOne(ctx,
+		coll.UpdateOne(ctx,
 			bson.M{"id": job.ID},
 			bson.M{"$set": bson.M{"status": "completed", "updated_at": time.Now()}},
 		)
-		if err != nil {
-			logger.Log.Error(" Mongo update failed:","error", err)
-		}
-
-		rdb.LRem(ctx, "processing_queue", 1, jobData)
-		fmt.Println("Job completed:", job.ID)
 		metrics.JobsProcessed.Inc()
-		metrics.ProcessingQueueLength.Dec()
-		return
+		logger.Log.Info("Job completed", "jobID", job.ID)
+		return nil
 	}
 
+	// ----------------- FAIL JOB -----------------
 	if job.Type == "fail" {
 		if job.RetryCount < job.MaxRetry {
-			err = utils.SendEmail(
-				job.Payload.To,
-				fmt.Sprintf("Retrying Job %s", job.ID),
-				fmt.Sprintf("Job %s failed. Retry attempt #%d", job.ID, job.RetryCount+1),
-			)
-			if err != nil {
-				fmt.Println("Email failed:", err)
-			}
-			metrics.JobsFailed.Inc()
-			metrics.JobsRetried.Inc()
-
 			job.RetryCount++
-			retryAt := time.Now().Add(time.Duration(math.Pow(2, float64(job.RetryCount))) * time.Second).Unix()
-			data, _ := json.Marshal(job)
-			rdb.ZAdd(ctx, "retry_zset", redis.Z{Score: float64(retryAt), Member: data})
-			metrics.RetryQueueLength.Inc()
 
+			retryAt := time.Now().
+				Add(time.Duration(math.Pow(2, float64(job.RetryCount))) * time.Second).
+				Unix()
 
-			_, err = coll.UpdateOne(ctx,
-				bson.M{"id": job.ID},
-				bson.M{"$set": bson.M{"status": "retrying", "retry_count": job.RetryCount, "updated_at": time.Now()}},
-			)
-			if err != nil {
-				logger.Log.Error("Mongo update failed:","error", err)
-			}
-		} else {
-			logger.Log.Info("☠️ Max retries reached → DLQ:", "jobID", job.ID)
 			data, _ := json.Marshal(job)
-			rdb.LPush(ctx, "dlq", data)
-			_, err = coll.UpdateOne(ctx,
+
+			rdb.ZAdd(ctx, "retry_zset", redis.Z{
+				Score:  float64(retryAt),
+				Member: data,
+			})
+
+			coll.UpdateOne(ctx,
 				bson.M{"id": job.ID},
-				bson.M{"$set": bson.M{"status": "failed", "updated_at": time.Now()}},
+				bson.M{"$set": bson.M{
+					"status":      "retrying",
+					"retry_count": job.RetryCount,
+					"updated_at":  time.Now(),
+				}},
 			)
-			metrics.DLQLength.Inc()
-			metrics.DLQLength.Inc()
-			if err != nil {
-				logger.Log.Error(" update failed:","error", err)
-			}
+
+			// Retry is NOT a final failure - only increment JobsRetried
+			metrics.JobsRetried.Inc()
+			logger.Log.Info("Job scheduled for retry", "jobID", job.ID)
+			return nil
 		}
-		rdb.LRem(ctx, "processing_queue", 1, jobData)
-		return
+
+		// ----------------- DLQ -----------------
+		data, _ := json.Marshal(job)
+		rdb.LPush(ctx, "dlq_queue", data)
+
+		coll.UpdateOne(ctx,
+			bson.M{"id": job.ID},
+			bson.M{"$set": bson.M{"status": "dlq", "updated_at": time.Now()}},
+		)
+
+		metrics.JobsFailed.Inc()
+		metrics.JobsDLQ.Inc()
+		logger.Log.Info("Job moved to DLQ", "jobID", job.ID)
+		return nil
 	}
 
-	logger.Log.Info("Unknown job type:", "type", job.Type)
-	rdb.LRem(ctx, "processing_queue", 1, jobData)
+	// ----------------- UNKNOWN TYPE -----------------
+	logger.Log.Error("Unknown job type", "type", job.Type)
+
+	data, _ := json.Marshal(job)
+	rdb.LPush(ctx, "dlq_queue", data)
+
+	coll.UpdateOne(ctx,
+		bson.M{"id": job.ID},
+		bson.M{"$set": bson.M{
+			"status":     "dlq",
+			"error":      "unknown job type",
+			"updated_at": time.Now(),
+		}},
+	)
+
+	metrics.JobsFailed.Inc()
+	metrics.JobsDLQ.Inc()
+	return nil
 }

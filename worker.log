@@ -20,3 +20,9 @@ nohup: ignoring input
 [GIN] 2026/01/04 - 01:39:17 | 200 |            0s |             ::1 | POST     "/admin/pause"
 [GIN] 2026/01/04 - 01:39:21 | 200 |      3.5946ms |             ::1 | GET      "/admin/status"
 [GIN] 2026/01/04 - 01:39:29 | 200 |            0s |             ::1 | POST     "/admin/resume"
+[GIN] 2026/01/04 - 01:39:35 | 200 |      3.4735ms |             ::1 | GET      "/admin/status"
+[GIN] 2026/01/04 - 01:39:43 | 200 |      1.9043ms |             ::1 | GET      "/admin/status"
+{"time":"2026-01-04T14:03:18.8037782+05:30","level":"INFO","msg":"ProcessJob ENTERED","raw":"{\"id\":\"a08c801c-c253-403c-9c28-e6443b4a7893\",\"type\":\"email\",\"status\":\"pending\",\"retry_count\":0,\"max_retry\":3,\"createdat\":\"2026-01-04T14:03:18.660833+05:30\",\"payload\":{\"to\":\"test@example.com\",\"subject\":\"hello\",\"body\":\"test\"}}"}
+{"time":"2026-01-04T14:03:18.8338625+05:30","level":"INFO","msg":"Processing job","jobID":"a08c801c-c253-403c-9c28-e6443b4a7893"}
+{"time":"2026-01-04T14:03:21.9395748+05:30","level":"ERROR","msg":"Email failed","error":"send mail failed: 535 5.7.0 The email limit is reached. Please upgrade your plan https://mailtrap.io/billing/plans/testing"}
+{"time":"2026-01-04T14:03:22.2305607+05:30","level":"ERROR","msg":"Job processing failed","error":"send mail failed: 535 5.7.0 The email limit is reached. Please upgrade your plan https://mailtrap.io/billing/plans/testing"}

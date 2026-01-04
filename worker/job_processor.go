@@ -18,10 +18,8 @@ import (
 func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) error {
 	var job models.Jobs
 
-	// DEBUG: Entry point tracking
 	logger.Log.Info("ProcessJob ENTERED", "raw", jobData)
 
-	// ALWAYS cleanup processing_queue exactly once, even on panic
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Log.Error("Panic recovered in ProcessJob", "panic", r, "job", jobData)
@@ -34,11 +32,9 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) error {
 		UpdateQueueMetrics(ctx, rdb)
 	}()
 
-	// ----------------- JSON PARSE -----------------
 	if err := json.Unmarshal([]byte(jobData), &job); err != nil {
 		logger.Log.Error("Invalid job JSON", "error", err)
 
-		// Move invalid JSON to DLQ
 		rdb.LPush(ctx, "dlq_queue", jobData)
 
 		metrics.JobsFailed.Inc()
@@ -49,7 +45,6 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) error {
 	logger.Log.Info("Processing job", "jobID", job.ID)
 	coll := db.Client.Database("jobqueue").Collection("jobs")
 
-	// ----------------- EMAIL JOB -----------------
 	if job.Type == "email" {
 		if err := utils.SendEmail(job.Payload.To, job.Payload.Subject, job.Payload.Body); err != nil {
 			logger.Log.Error("Email failed", "error", err)
@@ -108,7 +103,6 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) error {
 			return nil
 		}
 
-		// ----------------- DLQ -----------------
 		data, _ := json.Marshal(job)
 		rdb.LPush(ctx, "dlq_queue", data)
 
@@ -123,7 +117,6 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) error {
 		return nil
 	}
 
-	// ----------------- UNKNOWN TYPE -----------------
 	logger.Log.Error("Unknown job type", "type", job.Type)
 
 	data, _ := json.Marshal(job)

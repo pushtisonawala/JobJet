@@ -45,6 +45,21 @@ func CreateJobs(c *gin.Context) {
 		return
 	}
 
+	// Log which Redis address we used and current queue length for debugging
+	if q.Client() != nil && q.Client().Options() != nil {
+		addr := q.Client().Options().Addr
+		jobLen, _ := q.Client().LLen(c.Request.Context(), "job_queue").Result()
+		logger.Log.Info("Job pushed; redis info", "job_id", job.ID, "redis_addr", addr, "job_queue_len", jobLen)
+
+		c.JSON(http.StatusAccepted, gin.H{
+			"message": "job queued",
+			"job_id":  job.ID,
+			"redis_addr": addr,
+			"job_queue_len": jobLen,
+		})
+		return
+	}
+
 	c.JSON(http.StatusAccepted, gin.H{
 		"message": "job queued",
 		"job_id":  job.ID,

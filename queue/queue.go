@@ -6,6 +6,7 @@ import (
 	"jobqueue/logger"
 	"jobqueue/metrics"
 	"jobqueue/models"
+	"os"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -17,8 +18,12 @@ type RedisQueue struct {
 }
 
 func NewRedisQueue() *RedisQueue {
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "127.0.0.1:6379"
+	}
 	rdx := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr: redisAddr,
 		DB:   0,
 	})
 
@@ -26,7 +31,7 @@ func NewRedisQueue() *RedisQueue {
 	if err != nil {
 		panic("REDIS CONNECTION FAILED: " + err.Error())
 	}
-	logger.Log.Info("✅ Redis connected", "pong", pong)
+	logger.Log.Info("✅ Redis connected", "pong", pong, "addr", redisAddr)
 
 	return &RedisQueue{client: rdx}
 }
@@ -50,7 +55,6 @@ func (q *RedisQueue) Push(job models.Jobs) error {
 	return nil
 }
 
-// Client returns the underlying Redis client
 func (q *RedisQueue) Client() *redis.Client {
 	return q.client
 }

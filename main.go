@@ -41,5 +41,28 @@ func main() {
 	fmt.Println("server started")
 	db.ConnectMongo()
 	r.POST("/jobs", controllers.CreateJobs)
+
+	// Debug endpoint to show job_queue contents
+	r.GET("/debug/jobqueue", func(c *gin.Context) {
+		jobs, err := q.Client().LRange(context.Background(), "job_queue", 0, -1).Result()
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"job_queue": jobs, "count": len(jobs)})
+	})
+
+	// Debug endpoint to show redis addr, ping and queue lengths
+	r.GET("/debug/redis", func(c *gin.Context) {
+		addr := ""
+		if q.Client() != nil && q.Client().Options() != nil {
+			addr = q.Client().Options().Addr
+		}
+		pong, _ := q.Client().Ping(context.Background()).Result()
+		jobLen, _ := q.Client().LLen(context.Background(), "job_queue").Result()
+		procLen, _ := q.Client().LLen(context.Background(), "processing_queue").Result()
+		c.JSON(200, gin.H{"redis_addr": addr, "ping": pong, "job_queue_len": jobLen, "processing_queue_len": procLen})
+	})
+
 	r.Run(":8000")
 }

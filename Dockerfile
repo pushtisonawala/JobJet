@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go app
-RUN go build -o main .
+RUN go build -o main main.go
 
 # Expose port 8000 to the host
 EXPOSE 8000

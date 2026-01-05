@@ -14,11 +14,7 @@ import (
 var Client *mongo.Client
 
 func ConnectMongo() {
-	err := godotenv.Load()
-	if err != nil {
-		logger.Log.Error(" Error loading .env file")
-		os.Exit(1)
-	}
+	_ = godotenv.Load()
 
 	uri := os.Getenv("MONGO_URI")
 	if uri == "" {
@@ -31,7 +27,7 @@ func ConnectMongo() {
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
-		logger.Log.Error(" Mongo connection failed:","error", err)
+		logger.Log.Error(" Mongo connection failed:", "error", err)
 		os.Exit(1)
 	}
 

@@ -1,4 +1,4 @@
-version: "3.9"
+
 
 services:
   redis:
@@ -6,9 +6,37 @@ services:
     ports:
       - "6379:6379"
 
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
   app:
     build: .
     ports:
       - "8000:8000"
     depends_on:
       - redis
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - REDIS_ADDR=redis:6379
+
+  worker2:
+    build:
+      context: .
+      dockerfile: worker2/Dockerfile
+    ports:
+      - "8001:8001"
+      - "2113:2113"
+    depends_on:
+      - redis
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - REDIS_ADDR=redis:6379
+
+volumes:
+  mongo-data:

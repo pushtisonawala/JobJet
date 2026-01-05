@@ -7,6 +7,7 @@ import (
 	"jobqueue/metrics"
 	"jobqueue/worker"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -24,8 +25,12 @@ func main() {
 
 	db.ConnectMongo()
 
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
 	rdb := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr: redisAddr,
 		DB:   0,
 	})
 

@@ -37,7 +37,9 @@ func main() {
 		}
 	}()
 	r := gin.Default()
-	r.SetTrustedProxies([]string{"127.0.0.1"})
+	if err := r.SetTrustedProxies([]string{"127.0.0.1"}); err != nil {
+		logger.Log.Error("Failed to set trusted proxies", "error", err)
+	}
 	fmt.Println("server started")
 	db.ConnectMongo()
 	r.POST("/jobs", controllers.CreateJobs)
@@ -64,5 +66,7 @@ func main() {
 		c.JSON(200, gin.H{"redis_addr": addr, "ping": pong, "job_queue_len": jobLen, "processing_queue_len": procLen})
 	})
 
-	r.Run(":8000")
+	if err := r.Run(":8000"); err != nil {
+		logger.Log.Error("Gin server exited", "error", err)
+	}
 }

@@ -4,7 +4,7 @@ services:
   redis:
     image: redis:7
     ports:
-      - "6379:6379"
+      - "6380:6379"
 
   mongo:
     image: mongo:6
@@ -15,8 +15,9 @@ services:
 
   app:
     build: .
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8002:8000"
     depends_on:
       - redis
       - mongo
@@ -28,9 +29,10 @@ services:
     build:
       context: .
       dockerfile: worker2/Dockerfile
+    restart: unless-stopped
     ports:
-      - "8001:8001"
-      - "2113:2113"
+      - "8003:8001"
+      - "2114:2113"
     depends_on:
       - redis
       - mongo
@@ -38,5 +40,37 @@ services:
       - MONGO_URI=mongodb://mongo:27017
       - REDIS_ADDR=redis:6379
 
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - app
+      - worker2
+
+  grafana:
+    image: grafana/grafana:10.4.6
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+
 volumes:
   mongo-data:
+  prometheus-data:
+  grafana-data:

@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: "api"
+    static_configs:
+      - targets: ["app:2112"]
+
+  - job_name: "worker"
+    static_configs:
+      - targets: ["worker2:2113"]

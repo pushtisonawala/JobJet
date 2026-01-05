@@ -1,0 +1,154 @@
+{
+  "id": null,
+  "uid": "jobqueue-main",
+  "title": "Job Queue Overview",
+  "tags": ["jobqueue", "prometheus"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {"from": "now-1h", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Ingest: Jobs Received (rate)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {"refId": "A", "expr": "rate(jobs_recieved_total{job=\"api\"}[1m])"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"drawStyle": "lines", "lineInterpolation": "smooth"}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Processing: Jobs Processed (rate)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {"refId": "A", "expr": "rate(jobs_processed_total{job=\"worker\"}[1m])"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"drawStyle": "lines", "lineInterpolation": "smooth"}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Processing: Failures (rate)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "targets": [
+        {"refId": "A", "expr": "rate(jobs_failed_total{job=\"worker\"}[1m])"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"drawStyle": "lines", "lineInterpolation": "smooth"}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Processing: Retries (rate)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "targets": [
+        {"refId": "A", "expr": "rate(jobs_retried_total{job=\"worker\"}[1m])"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"drawStyle": "lines", "lineInterpolation": "smooth"}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "DLQ Inserts (rate)",
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 16},
+      "targets": [
+        {"refId": "A", "expr": "rate(jobs_dlq_total{job=\"worker\"}[1m])"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"drawStyle": "lines", "lineInterpolation": "smooth"}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "DLQ Length",
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 16},
+      "targets": [
+        {"refId": "A", "expr": "dlq_queue_length"}
+      ],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}}, "overrides": []}
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Job Queue Length",
+      "gridPos": {"h": 5, "w": 6, "x": 0, "y": 22},
+      "targets": [
+        {"refId": "A", "expr": "jobs_queue_length"}
+      ],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}}, "overrides": []}
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Processing Queue Length",
+      "gridPos": {"h": 5, "w": 6, "x": 6, "y": 22},
+      "targets": [
+        {"refId": "A", "expr": "processing_queue_length"}
+      ],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}}, "overrides": []}
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Retry Queue Length",
+      "gridPos": {"h": 5, "w": 6, "x": 12, "y": 22},
+      "targets": [
+        {"refId": "A", "expr": "retry_queue_length"}
+      ],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "values": false}},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}}, "overrides": []}
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Worker Restarts (cumulative)",
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 27},
+      "targets": [
+        {"refId": "A", "expr": "worker_restarts_total{job=\"worker\"}"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"drawStyle": "lines", "lineInterpolation": "smooth"}
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "templating": {"list": []}
+}

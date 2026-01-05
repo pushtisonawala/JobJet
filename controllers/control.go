@@ -52,9 +52,9 @@ func CreateJobs(c *gin.Context) {
 		logger.Log.Info("Job pushed; redis info", "job_id", job.ID, "redis_addr", addr, "job_queue_len", jobLen)
 
 		c.JSON(http.StatusAccepted, gin.H{
-			"message": "job queued",
-			"job_id":  job.ID,
-			"redis_addr": addr,
+			"message":       "job queued",
+			"job_id":        job.ID,
+			"redis_addr":    addr,
 			"job_queue_len": jobLen,
 		})
 		return

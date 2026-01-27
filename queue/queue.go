@@ -3,9 +3,9 @@ package queue
 import (
 	"context"
 	"encoding/json"
-	"jobqueue/logger"
-	"jobqueue/metrics"
-	"jobqueue/models"
+	"jobjet/logger"
+	"jobjet/metrics"
+	"jobjet/models"
 	"os"
 
 	"github.com/redis/go-redis/v9"

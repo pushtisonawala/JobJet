@@ -3,7 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
-	"jobqueue/logger"
+	"jobjet/logger"
 	"time"
 
 	"github.com/redis/go-redis/v9"

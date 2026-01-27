@@ -3,11 +3,11 @@ package worker
 import (
 	"context"
 	"encoding/json"
-	"jobqueue/db"
-	"jobqueue/logger"
-	"jobqueue/metrics"
-	"jobqueue/models"
-	"jobqueue/utils"
+	"jobjet/db"
+	"jobjet/logger"
+	"jobjet/metrics"
+	"jobjet/models"
+	"jobjet/utils"
 	"math"
 	"time"
 

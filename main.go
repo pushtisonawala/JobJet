@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"jobqueue/controllers"
-	"jobqueue/db"
-	"jobqueue/logger"
-	"jobqueue/metrics"
-	"jobqueue/queue"
+	"jobjet/controllers"
+	"jobjet/db"
+	"jobjet/logger"
+	"jobjet/metrics"
+	"jobjet/queue"
 	"net/http"
 	"time"
 

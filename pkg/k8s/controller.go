@@ -100,6 +100,39 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 
 // handleAdd processes new JobDefinition resources
 func (c *Controller) handleAdd(obj interface{}) {
+	// Step 0: Create a pod with jobdefinition label for demo/testing
+	// In real systems, this would be a Job or your actual worker logic
+	podName := fmt.Sprintf("jobjet-pod-%s", name)
+	pod := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "v1",
+			"kind":       "Pod",
+			"metadata": map[string]interface{}{
+				"name":      podName,
+				"namespace": namespace,
+				"labels": map[string]interface{}{
+					"jobdefinition": name,
+				},
+			},
+			"spec": map[string]interface{}{
+				"containers": []interface{}{
+					map[string]interface{}{
+						"name":    "worker",
+						"image":   "busybox",
+						"command": []interface{}{"sh", "-c", "echo Hello from JobJet pod; sleep 10"},
+					},
+				},
+				"restartPolicy": "Never",
+			},
+		},
+	}
+	podGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
+	_, err := c.dynamicClient.Resource(podGVR).Namespace(namespace).Create(context.TODO(), pod, metav1.CreateOptions{})
+	if err != nil {
+		log.Printf("ERROR: failed to create pod for jobdefinition %s: %v\n", name, err)
+	} else {
+		log.Printf("  ✓ Created pod %s with label jobdefinition=%s\n", podName, name)
+	}
 	// Convert the object to unstructured format
 	// WHY: Dynamic client works with unstructured.Unstructured, not typed structs
 	u, ok := obj.(*unstructured.Unstructured)

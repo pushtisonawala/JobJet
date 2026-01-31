@@ -21,9 +21,9 @@ import (
 
 var (
 	gvr = schema.GroupVersionResource{
-		Group:    "batch.jobjet.dev",
-		Version:  "v1alpha1",
-		Resource: "jobjettasks",
+		Group:    "jobjet.dev",
+		Version:  "v1",
+		Resource: "jobdefinitions",
 	}
 
 	// JobJet API URL (same server that runs on :8000)
@@ -47,7 +47,7 @@ func main() {
 		log.Fatalf("Failed to create K8s client: %v", err)
 	}
 
-	// Create informer to watch JobJetTask resources
+	// Create informer to watch JobDefinition resources
 	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(
 		dynClient,
 		30*time.Second,
@@ -61,16 +61,16 @@ func main() {
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			u := obj.(*unstructured.Unstructured)
-			log.Printf("✨ New JobJetTask detected: %s/%s", u.GetNamespace(), u.GetName())
+			log.Printf("✨ New JobDefinition detected: %s/%s", u.GetNamespace(), u.GetName())
 			handleTask(dynClient, u)
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			u := newObj.(*unstructured.Unstructured)
 
 			// Only process if status is empty (not yet submitted)
-			phase, _, _ := unstructured.NestedString(u.Object, "status", "phase")
+			phase, _, _ := unstructured.NestedString(u.Object, "status", "state")
 			if phase == "" {
-				log.Printf("🔄 Processing updated JobJetTask: %s/%s", u.GetNamespace(), u.GetName())
+				log.Printf("🔄 Processing updated JobDefinition: %s/%s", u.GetNamespace(), u.GetName())
 				handleTask(dynClient, u)
 			}
 		},
@@ -80,7 +80,7 @@ func main() {
 	stopCh := make(chan struct{})
 	defer close(stopCh)
 
-	log.Println("✅ Controller running. Watching for JobJetTask resources...")
+	log.Println("✅ Controller running. Watching for JobDefinition resources...")
 	log.Println("   Press Ctrl+C to exit")
 
 	factory.Start(stopCh)
@@ -99,11 +99,11 @@ func handleTask(client dynamic.Interface, obj *unstructured.Unstructured) {
 		return
 	}
 
-	// Extract handler (job type)
-	handler, found, err := unstructured.NestedString(obj.Object, "spec", "handler")
+	// Extract queue (job type)
+	queue, found, err := unstructured.NestedString(obj.Object, "spec", "queue")
 	if !found || err != nil {
-		log.Printf("❌ Missing handler field")
-		updateTaskStatus(ctx, client, obj, "Failed", "", "Missing required field: handler")
+		log.Printf("❌ Missing queue field")
+		updateTaskStatus(ctx, client, obj, "Failed", "", "Missing required field: queue")
 		return
 	}
 
@@ -115,10 +115,10 @@ func handleTask(client dynamic.Interface, obj *unstructured.Unstructured) {
 		return
 	}
 
-	log.Printf("📤 Submitting job: type=%s", handler)
+	log.Printf("📤 Submitting job: type=%s", queue)
 
 	// Submit to JobJet API
-	jobID, err := submitToJobJetAPI(handler, payloadMap)
+	jobID, err := submitToJobJetAPI(queue, payloadMap)
 	if err != nil {
 		log.Printf("❌ Failed to submit: %v", err)
 		updateTaskStatus(ctx, client, obj, "Failed", "", err.Error())

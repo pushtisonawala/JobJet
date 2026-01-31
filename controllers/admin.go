@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"context"
-	"jobqueue/worker"
+	"jobjet/worker"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

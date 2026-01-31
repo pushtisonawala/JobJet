@@ -2,7 +2,7 @@ package worker
 
 import (
 	"context"
-	"jobqueue/logger"
+	"jobjet/logger"
 	"os"
 	"os/signal"
 	"sync"

@@ -2,7 +2,7 @@ package db
 
 import (
 	"context"
-	"jobqueue/logger"
+	"jobjet/logger"
 	"os"
 	"time"
 

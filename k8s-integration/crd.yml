@@ -1,0 +1,63 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: jobjettasks.batch.jobjet.dev
+spec:
+  group: batch.jobjet.dev
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - handler
+                - payload
+              properties:
+                handler:
+                  type: string
+                  description: "Job type (e.g., sendEmail)"
+                payload:
+                  type: object
+                  description: "Job payload as JSON object"
+                  x-kubernetes-preserve-unknown-fields: true
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  description: "Current phase (Pending|Completed|Failed)"
+                jobID:
+                  type: string
+                  description: "JobJet job ID from API"
+                message:
+                  type: string
+                submittedAt:
+                  type: string
+                  format: date-time
+      additionalPrinterColumns:
+        - name: Handler
+          type: string
+          jsonPath: .spec.handler
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: JobID
+          type: string
+          jsonPath: .status.jobID
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      subresources:
+        status: {}
+  scope: Namespaced
+  names:
+    plural: jobjettasks
+    singular: jobjettask
+    kind: JobJetTask
+    shortNames:
+      - jjt

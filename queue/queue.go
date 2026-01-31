@@ -20,7 +20,7 @@ type RedisQueue struct {
 func NewRedisQueue() *RedisQueue {
 	redisAddr := os.Getenv("REDIS_ADDR")
 	if redisAddr == "" {
-		redisAddr = "127.0.0.1:6380" // Default for local dev, matches docker-compose
+		redisAddr = "127.0.0.1:6379" // Default for local dev, matches default Redis port
 	}
 	rdx := redis.NewClient(&redis.Options{
 		Addr: redisAddr,

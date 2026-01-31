@@ -1,0 +1,11 @@
+apiVersion: batch.jobjet.dev/v1alpha1
+kind: JobJetTask
+metadata:
+  name: example-email-job
+  namespace: default
+spec:
+  handler: "sendEmail"
+  payload:
+    to: "user@example.com"
+    subject: "Test Email from Kubernetes"
+    body: "This job was submitted via K8s CRD and processed by JobJet!"

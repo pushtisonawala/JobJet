@@ -23,7 +23,6 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) error {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Log.Error("Panic recovered in ProcessJob", "panic", r, "job", jobData)
-			// Move panicked job to DLQ
 			rdb.LPush(ctx, "dlq_queue", jobData)
 			metrics.JobsFailed.Inc()
 			metrics.JobsDLQ.Inc()
@@ -97,7 +96,6 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) error {
 				}},
 			)
 
-			// Retry is NOT a final failure - only increment JobsRetried
 			metrics.JobsRetried.Inc()
 			logger.Log.Info("Job scheduled for retry", "jobID", job.ID)
 			return nil

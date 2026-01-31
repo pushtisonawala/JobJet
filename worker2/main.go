@@ -1,11 +1,11 @@
 package main
 
 import (
-	"jobqueue/controllers"
-	"jobqueue/db"
-	"jobqueue/logger"
-	"jobqueue/metrics"
-	"jobqueue/worker"
+	"jobjet/controllers"
+	"jobjet/db"
+	"jobjet/logger"
+	"jobjet/metrics"
+	"jobjet/worker"
 	"net/http"
 	"os"
 

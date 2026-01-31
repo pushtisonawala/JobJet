@@ -1,0 +1,10 @@
+apiVersion: jobjet.dev/v1
+kind: JobDefinition
+metadata:
+  name: example-job
+  namespace: default
+spec:
+  queue: "email-queue"
+  payload:
+    type: "send-email"
+    retries: 3

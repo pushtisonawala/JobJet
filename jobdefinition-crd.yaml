@@ -1,0 +1,58 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: jobdefinitions.jobjet.dev
+spec:
+  group: jobjet.dev
+  names:
+    kind: JobDefinition
+    plural: jobdefinitions
+    singular: jobdefinition
+    shortNames:
+      - jd
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                queue:
+                  type: string
+                  description: "Queue name where the job should be enqueued"
+                payload:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      description: "Job type identifier"
+                    retries:
+                      type: integer
+                      description: "Number of retry attempts"
+              required:
+                - queue
+                - payload
+            status:
+              type: object
+              properties:
+                state:
+                  type: string
+                  description: "Current state: Pending, Running, Succeeded, Failed"
+      # Enable status subresource (CRITICAL for UpdateStatus to work)
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Queue
+          type: string
+          jsonPath: .spec.queue
+        - name: State
+          type: string
+          jsonPath: .status.state
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

@@ -2,7 +2,7 @@ package worker
 
 import (
 	"context"
-	"jobqueue/metrics"
+	"jobjet/metrics"
 
 	"github.com/redis/go-redis/v9"
 )

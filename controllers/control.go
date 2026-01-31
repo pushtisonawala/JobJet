@@ -1,15 +1,15 @@
 package controllers
 
 import (
-	"jobqueue/logger"
+	"jobjet/logger"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"jobqueue/models"
-	"jobqueue/queue"
+	"jobjet/models"
+	"jobjet/queue"
 )
 
 func CreateJobs(c *gin.Context) {

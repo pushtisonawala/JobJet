@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"jobjet/controllers"
 	"jobjet/db"
 	"jobjet/logger"
@@ -9,6 +10,9 @@ import (
 	"net/http"
 	"os"
 
+	"jobjet/otel"
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redis/go-redis/v9"
@@ -16,6 +20,13 @@ import (
 
 func main() {
 	logger.Log.Info("Worker starting...")
+
+	// 🆕 Add tracing
+	shutdown, err := otel.InitTracer("jobqueue-worker")
+	if err == nil && shutdown != nil {
+		defer shutdown(context.Background())
+		log.Println("✅ Worker tracing initialized")
+	}
 
 	metrics.Init()
 	metrics.WorkerRestarts.Inc()
@@ -47,7 +58,7 @@ func main() {
 
 	go worker.RetryScheduler(w.Ctx, rdb)
 
-	w.Start(func(job string) error {
-		return worker.ProcessJob(w.Ctx, rdb, job)
+	w.Start(func(ctx context.Context, job string) error {
+		return worker.ProcessJob(ctx, rdb, job)
 	})
 }

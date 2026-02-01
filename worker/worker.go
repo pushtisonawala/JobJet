@@ -43,7 +43,7 @@ func (w *Worker) Resume() {
 	logger.Log.Info("Worker resumed")
 }
 
-func (w *Worker) Start(processFunc func(string) error) {
+func (w *Worker) Start(processFunc func(context.Context, string) error) {
 	defer w.wg.Wait()
 
 	// OS signals
@@ -95,7 +95,7 @@ func (w *Worker) Start(processFunc func(string) error) {
 				<-sem
 				w.wg.Done()
 			}()
-			if err := processFunc(j); err != nil {
+			if err := processFunc(w.Ctx, j); err != nil {
 				logger.Log.Error("Job processing failed", "error", err)
 			}
 		}(job)

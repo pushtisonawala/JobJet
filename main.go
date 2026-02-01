@@ -11,6 +11,10 @@ import (
 	"net/http"
 	"time"
 
+	"jobjet/otel"
+
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +26,14 @@ func main() {
 	http.Handle("/metrics", promhttp.Handler())
 	go http.ListenAndServe(":2112", nil)
 	logger.Log.Info("application starting")
+
+	// 🆕 Add tracing
+	shutdown, err := otel.InitTracer("jobqueue-api")
+	if err == nil && shutdown != nil {
+		defer shutdown(context.Background())
+		logger.Log.Info("✅ Tracing initialized")
+	}
+
 	q := queue.NewRedisQueue()
 	go func() {
 		for {
@@ -36,7 +48,9 @@ func main() {
 			time.Sleep(5 * time.Second)
 		}
 	}()
+
 	r := gin.Default()
+	r.Use(otelgin.Middleware("jobqueue-api"))
 	if err := r.SetTrustedProxies([]string{"127.0.0.1"}); err != nil {
 		logger.Log.Error("Failed to set trusted proxies", "error", err)
 	}

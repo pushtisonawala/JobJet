@@ -38,7 +38,7 @@ func CreateJobs(c *gin.Context) {
 	q := queue.NewRedisQueue()
 	logger.Log.Info("Controller reached", "job_id", job.ID)
 
-	err := q.Push(job)
+	err := q.Push(c.Request.Context(), job)
 	if err != nil {
 		logger.Log.Error("Job push failed", "job_id", job.ID, "error", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to queue job"})

@@ -11,11 +11,21 @@ import (
 	"math"
 	"time"
 
+	"go.opentelemetry.io/otel/codes"
+
+	gootel "go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) error {
+	// 🆕 Add tracing span
+	tracer := gootel.Tracer("jobqueue-worker")
+	ctx, span := tracer.Start(ctx, "ProcessJob")
+	defer span.End()
+
 	var job models.Jobs
 
 	logger.Log.Info("ProcessJob ENTERED", "raw", jobData)
@@ -41,34 +51,83 @@ func ProcessJob(ctx context.Context, rdb *redis.Client, jobData string) error {
 		return err
 	}
 
+	// 🆕 Add job metadata to span
+	span.SetAttributes(
+		attribute.String("job.id", job.ID),
+		attribute.String("job.type", job.Type),
+	)
+
+	// Add production-grade attributes
+	span.SetAttributes(
+		attribute.String("job.status", job.Status),
+		attribute.Int("job.retry_count", job.RetryCount),
+		attribute.Int("job.max_retry", job.MaxRetry),
+	)
+	if !job.CreatedAt.IsZero() {
+		span.SetAttributes(attribute.String("job.created_at", job.CreatedAt.Format(time.RFC3339)))
+		span.SetAttributes(attribute.Int64("job.queue_wait_ms", time.Since(job.CreatedAt).Milliseconds()))
+	}
+
+	if job.Type == "sendEmail" {
+		span.SetAttributes(
+			attribute.String("email.recipient", job.Payload.To),
+			attribute.String("email.subject", job.Payload.Subject),
+		)
+	}
+
+	// Execution timing
+	workStart := time.Now()
+	_, workSpan := tracer.Start(ctx, "ExecuteHandler")
+	workSpan.SetAttributes(attribute.String("handler", job.Type))
+
 	logger.Log.Info("Processing job", "jobID", job.ID)
 	coll := db.Client.Database("jobqueue").Collection("jobs")
 
+	var handlerErr error
 	if job.Type == "email" {
-		if err := utils.SendEmail(job.Payload.To, job.Payload.Subject, job.Payload.Body); err != nil {
-			logger.Log.Error("Email failed", "error", err)
-
+		handlerErr = utils.SendEmail(job.Payload.To, job.Payload.Subject, job.Payload.Body)
+		if handlerErr != nil {
+			logger.Log.Error("Email failed", "error", handlerErr)
 			// Move to DLQ on email failure
 			data, _ := json.Marshal(job)
 			rdb.LPush(ctx, "dlq_queue", data)
-
 			coll.UpdateOne(ctx,
 				bson.M{"id": job.ID},
-				bson.M{"$set": bson.M{"status": "dlq", "error": err.Error(), "updated_at": time.Now()}},
+				bson.M{"$set": bson.M{"status": "dlq", "error": handlerErr.Error(), "updated_at": time.Now()}},
 			)
-
 			metrics.JobsFailed.Inc()
 			metrics.JobsDLQ.Inc()
-			return err
 		}
+		if handlerErr == nil {
+			coll.UpdateOne(ctx,
+				bson.M{"id": job.ID},
+				bson.M{"$set": bson.M{"status": "completed", "updated_at": time.Now()}},
+			)
+			metrics.JobsProcessed.Inc()
+			logger.Log.Info("Job completed", "jobID", job.ID)
+		}
+	}
+	workDuration := time.Since(workStart).Milliseconds()
+	workSpan.SetAttributes(attribute.Int64("handler.execution_ms", workDuration))
+	workSpan.End()
 
-		coll.UpdateOne(ctx,
-			bson.M{"id": job.ID},
-			bson.M{"$set": bson.M{"status": "completed", "updated_at": time.Now()}},
+	var totalTime int64
+	if !job.CreatedAt.IsZero() {
+		totalTime = time.Since(job.CreatedAt).Milliseconds()
+	}
+
+	if handlerErr == nil {
+		span.SetStatus(codes.Ok, "Job completed successfully")
+		span.SetAttributes(
+			attribute.Bool("job.succeeded", true),
+			attribute.Int64("job.total_duration_ms", totalTime),
 		)
-		metrics.JobsProcessed.Inc()
-		logger.Log.Info("Job completed", "jobID", job.ID)
 		return nil
+	} else if handlerErr != nil {
+		span.RecordError(handlerErr)
+		span.SetStatus(codes.Error, "Job processing failed")
+		span.SetAttributes(attribute.Bool("job.failed", true))
+		return handlerErr
 	}
 
 	// ----------------- FAIL JOB -----------------

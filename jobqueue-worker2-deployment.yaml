@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jobqueue-worker2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jobqueue-worker2
+  template:
+    metadata:
+      labels:
+        app: jobqueue-worker2
+    spec:
+      containers:
+      - name: worker2
+        image: jobqueue-worker2:latest

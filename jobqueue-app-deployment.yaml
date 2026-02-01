@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jobqueue-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jobqueue-app
+  template:
+    metadata:
+      labels:
+        app: jobqueue-app
+    spec:
+      containers:
+      - name: app
+        image: jobqueue-app:latest
+        ports:
+        - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jobqueue-app
+spec:
+  selector:
+    app: jobqueue-app
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000

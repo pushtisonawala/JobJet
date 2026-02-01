@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jobqueue-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jobqueue-controller
+  template:
+    metadata:
+      labels:
+        app: jobqueue-controller
+    spec:
+      containers:
+      - name: controller
+        image: jobqueue-controller:latest

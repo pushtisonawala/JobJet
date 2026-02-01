@@ -30,7 +30,6 @@ func main() {
 	ctx := context.Background()
 	rdb := redis.NewClient(&redis.Options{Addr: "localhost:6379"})
 
-	// Add email job (should succeed - metrics.JobsProcessed.Inc())
 	emailJob := Job{
 		ID: uuid.NewString(), Type: "email", Status: "pending",
 		RetryCount: 0, MaxRetry: 3, CreatedAt: time.Now(),
@@ -40,7 +39,6 @@ func main() {
 	rdb.LPush(ctx, "job_queue", data)
 	fmt.Println("Added email job (should increment jobs_processed_total)")
 
-	// Add fail job (should retry 3x then DLQ - metrics.JobsRetried.Inc() x3, then JobsDLQ.Inc())
 	failJob := Job{
 		ID: uuid.NewString(), Type: "fail", Status: "pending",
 		RetryCount: 0, MaxRetry: 3, CreatedAt: time.Now(),

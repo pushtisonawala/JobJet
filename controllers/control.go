@@ -46,7 +46,7 @@ func CreateJobs(c *gin.Context) {
 
 	q := queue.NewRedisQueue()
 	logger.Log.Info("Controller reached", "job_id", job.ID)
-	
+
 	// Add span attributes
 	span.SetAttributes(
 		attribute.String("job.id", job.ID),

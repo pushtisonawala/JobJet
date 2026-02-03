@@ -1,0 +1,24 @@
+apiVersion: jobjet.dev/v1
+kind: JobDefinition
+metadata:
+  name: notification-job
+  namespace: default
+spec:
+  queue: "notifications"
+  payload:
+    type: "notification"
+    message: "Your Kubernetes JobQueue is working!"
+    priority: "high"
+---
+apiVersion: jobjet.dev/v1
+kind: JobDefinition
+metadata:
+  name: data-processing-job
+  namespace: default
+spec:
+  queue: "data-processing"
+  payload:
+    type: "data_process"
+    dataset: "user_analytics"
+    format: "json"
+    retries: 5

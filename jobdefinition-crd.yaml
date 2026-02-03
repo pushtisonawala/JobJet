@@ -27,6 +27,7 @@ spec:
                   description: "Queue name where the job should be enqueued"
                 payload:
                   type: object
+                  additionalProperties: true
                   properties:
                     type:
                       type: string

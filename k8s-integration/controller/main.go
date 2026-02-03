@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -34,11 +35,18 @@ func main() {
 	log.Println("🚀 JobJet K8s Controller starting...")
 	log.Printf("📡 Connecting to JobJet API: %s", jobjetURL)
 
-	// Load kubeconfig from default location
-	kubeconfig := os.Getenv("HOME") + "/.kube/config"
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	// Try in-cluster config first, then fallback to kubeconfig file
+	var config *rest.Config
+	var err error
+
+	config, err = rest.InClusterConfig()
 	if err != nil {
-		log.Fatalf("Failed to load kubeconfig: %v", err)
+		log.Printf("Not running in-cluster, trying kubeconfig file...")
+		kubeconfig := os.Getenv("HOME") + "/.kube/config"
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		if err != nil {
+			log.Fatalf("Failed to load kubeconfig: %v", err)
+		}
 	}
 
 	// Create Kubernetes dynamic client

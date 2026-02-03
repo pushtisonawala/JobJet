@@ -1,13 +1,14 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
 
+	"jobjet/otel"
 	"jobjet/pkg/k8s"
 
 	"k8s.io/client-go/dynamic"
@@ -19,17 +20,23 @@ import (
 // WHY: In production, this would call your actual JobJet queue system
 type MockJobJetEnqueuer struct{}
 
-func (m *MockJobJetEnqueuer) Enqueue(jobName string) (string, error) {
+func (m *MockJobJetEnqueuer) Enqueue(handler string, payload interface{}) error {
 	// In production, replace this with actual JobJet.Enqueue call
 	// For now, we just simulate success
-	jobID := fmt.Sprintf("job-%s-%d", jobName, os.Getpid())
-	log.Printf("[JobJet] Enqueue called for: %s → JobID: %s\n", jobName, jobID)
-	return jobID, nil
+	log.Printf("[JobJet] Enqueue called for handler: %s with payload: %v\n", handler, payload)
+	return nil
 }
 
 func main() {
 	log.Println("JobJet Kubernetes Controller")
 	log.Println("=============================")
+
+	// Initialize tracing
+	shutdown, err := otel.InitTracer("jobqueue-controller")
+	if err == nil && shutdown != nil {
+		defer shutdown(context.Background())
+		log.Println("✅ Controller tracing initialized")
+	}
 
 	// Step 1: Load kubeconfig
 	// WHY: We need to authenticate with the Kubernetes API server

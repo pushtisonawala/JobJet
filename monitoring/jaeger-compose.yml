@@ -8,7 +8,9 @@ services:
       - COLLECTOR_OTLP_ENABLED=true
     ports:
       - "16686:16686"  # Jaeger UI
-      - "4318:4318"    # OTLP HTTP receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "14250:14250" # gRPC receiver
+      - "14268:14268" # HTTP receiver
     networks:
       - jobqueue-net
 

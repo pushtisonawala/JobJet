@@ -102,6 +102,8 @@ go build -o jobjet .
 # Submit your first job!
 ./jobjet submit email --payload '{"to": "user@example.com", "subject": "Welcome!", "body": "Hello from JobJet!"}'
 ```
+<img width="946" height="801" alt="image" src="https://github.com/user-attachments/assets/2e15f6c2-1650-46bc-a8f4-97793fbcea6f" />
+
 
  **Congratulations!** Your JobJet system is now running. Visit http://localhost:16686 to see your job traces in Jaeger!
 
@@ -192,7 +194,7 @@ curl -X POST http://localhost:8000/jobs \
 }'
 
 ```
-<img width="903" height="666" alt="image" src="https://github.com/user-attachments/assets/e0654937-1978-405e-bf93-c911f102a926" />
+<img width="684" height="290" alt="image" src="https://github.com/user-attachments/assets/1bab99e5-a433-4eac-b0bf-5878ab939a77" />
 
 
 
@@ -237,6 +239,7 @@ docker-compose up -d grafana
 open http://localhost:3000
 # Login: admin/admin
 ```
+<img width="1510" height="786" alt="image" src="https://github.com/user-attachments/assets/c5d5e52f-3812-4dc1-9b02-13dc4ce64994" />
 
 ##  Kubernetes Complete Setup & Integration
 
@@ -302,6 +305,8 @@ kubectl apply -f jobqueue-worker2-deployment.yaml
 # Check deployment status
 kubectl get pods -w
 ```
+<img width="898" height="400" alt="image" src="https://github.com/user-attachments/assets/eddaba93-46b1-4499-b3e1-46a0d0d5ed12" />
+
 
 ### Step 6: Expose Services
 ```bash
@@ -380,6 +385,8 @@ spec:
     output_bucket: "processed-images"
 EOF
 ```
+<img width="700" height="626" alt="image" src="https://github.com/user-attachments/assets/7b075f5b-7e53-4dbc-bcbf-6bd4c02c0044" />
+
 
 ### Monitoring Kubernetes Jobs
 
@@ -400,6 +407,8 @@ kubectl logs -l jobdefinition=welcome-email-job
 # Monitor job controller logs
 kubectl logs -l app=jobqueue-controller -f
 ```
+<img width="874" height="828" alt="image" src="https://github.com/user-attachments/assets/fb739ab4-137a-4553-8cc9-43f70d3aa6e3" />
+
 
 ### Scaling in Kubernetes
 
@@ -586,6 +595,8 @@ EOF
 # YAML format
 ./jobjet describe data-processing-1770131700000000 --output yaml
 ```
+<img width="649" height="607" alt="image" src="https://github.com/user-attachments/assets/4af1e4a0-1d00-46e4-a936-66dd9cc44089" />
+
 
 #### Advanced CLI Usage Examples
 
@@ -831,6 +842,7 @@ curl "http://localhost:16686/api/traces?service=jobqueue-api&operation=POST%20/j
 # Find traces by tags
 curl "http://localhost:16686/api/traces?service=jobqueue-worker&tag=job.type:email&limit=10"
 ```
+
 
 ### Trace Correlation Examples
 

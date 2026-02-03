@@ -190,9 +190,10 @@ curl -X POST http://localhost:8000/jobs \
   "channels": ["email", "sms", "push"],
   "priority": "high"
 }'
-<img width="903" height="666" alt="image" src="https://github.com/user-attachments/assets/e0654937-1978-405e-bf93-c911f102a926" />
 
 ```
+<img width="903" height="666" alt="image" src="https://github.com/user-attachments/assets/e0654937-1978-405e-bf93-c911f102a926" />
+
 
 
 ## 📊 Monitoring & Observability

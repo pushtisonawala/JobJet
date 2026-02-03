@@ -213,9 +213,7 @@ JobJet includes comprehensive distributed tracing:
    - Open http://localhost:16686
    - Search for services: `jaeger-all-in-one`
    - Filter by operation: `POST /jobs`, `process_job`, `job_execution`
-   - 
-<img width="1894" height="776" alt="image" src="https://github.com/user-attachments/assets/9892ac6b-98cc-4d4b-a352-e045e33e7e80" />
-
+     
 
 ### Prometheus Metrics
 
@@ -826,6 +824,8 @@ curl -s http://localhost:16686/api/services | jq '.data[].name'
    # Long-running jobs (> 5 seconds)
    Min Duration: 5s
    ```
+   <img width="1894" height="776" alt="image" src="https://github.com/user-attachments/assets/9892ac6b-98cc-4d4b-a352-e045e33e7e80" />
+
 
 #### Advanced Jaeger Queries
 ```bash

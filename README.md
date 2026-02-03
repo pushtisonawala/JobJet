@@ -211,7 +211,7 @@ JobJet includes comprehensive distributed tracing:
 
 2. **View Traces:**
    - Open http://localhost:16686
-   - Search for services: `jaeger-all-in-one`
+   - Search for service: `jaeger-all-in-one`
    - Filter by operation: `POST /jobs`, `process_job`, `job_execution`
      
 
@@ -1120,4 +1120,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with ❤️ using Go, Kubernetes, and modern observability tools.**
 
-> 💡 **Tip:** Start with the Quick Start guide, then follow the Kubernetes, CLI, and Jaeger sections for complete setup!
+>  **Tip:** Start with the Quick Start guide, then follow the Kubernetes, CLI, and Jaeger sections for complete setup!

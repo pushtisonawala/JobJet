@@ -1,0 +1,12 @@
+apiVersion: jobjet.dev/v1
+kind: JobDefinition
+metadata:
+  name: test-email-job
+  namespace: default
+spec:
+  queue: "email-queue"
+  payload:
+    type: "email"
+    to: "test@example.com"
+    subject: "Test Email from Kubernetes"
+    body: "This is a test email sent from our Kubernetes JobQueue system!"

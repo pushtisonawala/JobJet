@@ -1,0 +1,57 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: email-1770131662641564100
+  labels:
+    jobdefinition: email-1770131662641564100
+    queue: email
+spec:
+  template:
+    metadata:
+      labels:
+        jobdefinition: email-1770131662641564100
+        queue: email
+    spec:
+      containers:
+      - name: worker
+        image: busybox
+        command: ["sh", "-c"]
+        args:
+        - |
+          echo "Processing email job..."
+          echo "To: test1@example.com"
+          echo "Subject: CLI Test 1"
+          echo "Body: Testing list command"
+          echo "Job completed successfully!"
+          sleep 30
+      restartPolicy: Never
+  backoffLimit: 3
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: notification-1770131674494908000
+  labels:
+    jobdefinition: notification-1770131674494908000
+    queue: notification
+spec:
+  template:
+    metadata:
+      labels:
+        jobdefinition: notification-1770131674494908000
+        queue: notification
+    spec:
+      containers:
+      - name: worker
+        image: busybox
+        command: ["sh", "-c"]
+        args:
+        - |
+          echo "Processing notification job..."
+          echo "User ID: 123"
+          echo "Message: Test notification"
+          echo "Type: sms"
+          echo "Job completed successfully!"
+          sleep 30
+      restartPolicy: Never
+  backoffLimit: 3

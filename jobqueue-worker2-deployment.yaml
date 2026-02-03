@@ -15,3 +15,9 @@ spec:
       containers:
       - name: worker2
         image: jobqueue-worker2:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: REDIS_ADDR
+          value: "redis:6379"
+        - name: MONGO_URI
+          value: "mongodb://mongo:27017/jobjet"

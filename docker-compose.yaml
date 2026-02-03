@@ -55,6 +55,16 @@ services:
       - app
       - worker2
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    restart: unless-stopped
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4318:4318"    # OTLP HTTP receiver
+      - "14268:14268"  # Jaeger collector
+
   grafana:
     image: grafana/grafana:10.4.6
     restart: unless-stopped

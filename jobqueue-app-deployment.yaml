@@ -15,8 +15,14 @@ spec:
       containers:
       - name: app
         image: jobqueue-app:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 8000
+        env:
+        - name: REDIS_ADDR
+          value: "redis:6379"
+        - name: MONGO_URI
+          value: "mongodb://mongo:27017/jobjet"
 ---
 apiVersion: v1
 kind: Service

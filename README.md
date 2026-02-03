@@ -1,36 +1,36 @@
-# 🚀 JobJet - Distributed Job Queue System
+#  JobJet - Distributed Job Queue System
 
 > **A powerful, scalable job queue system with Kubernetes native support, distributed tracing, and comprehensive monitoring.**
 
 JobJet is a modern job queue system that can run both as a standalone application and in Kubernetes. It features a powerful CLI tool, real-time monitoring with Jaeger and Prometheus, and supports various job types from simple email sending to complex data processing tasks.
 
-## 📋 Table of Contents
+##  Table of Contents
 
-- [✨ Features](#-features)
-- [🏗️ Architecture](#️-architecture)
-- [🚀 Quick Start](#-quick-start)
-- [📦 Installation](#-installation)
-- [🛠️ Usage Examples](#️-usage-examples)
-- [📊 Monitoring & Observability](#-monitoring--observability)
-- [☸️ Kubernetes Integration](#️-kubernetes-integration)
-- [🎯 JobJet CLI](#-jobjet-cli)
-- [🔧 Configuration](#-configuration)
-- [📚 API Reference](#-api-reference)
-- [🤝 Contributing](#-contributing)
+- [ Features](#-features)
+- [ Architecture](#️-architecture)
+- [ Quick Start](#-quick-start)
+- [ Installation](#-installation)
+- [ Usage Examples](#️-usage-examples)
+- [ Monitoring & Observability](#-monitoring--observability)
+- [ Kubernetes Integration](#️-kubernetes-integration)
+- [ JobJet CLI](#-jobjet-cli)
+- [ Configuration](#-configuration)
+- [ API Reference](#-api-reference)
+- [ Contributing](#-contributing)
 
-## ✨ Features
+##  Features
 
-- **🎯 Multiple Deployment Modes**: Run standalone or in Kubernetes
-- **📱 Powerful CLI**: `jobjet` command-line tool for job management
-- **🔍 Distributed Tracing**: Full observability with Jaeger integration
-- **📊 Metrics & Monitoring**: Prometheus metrics and Grafana dashboards
-- **⚡ High Performance**: Redis-backed queue with efficient job processing
-- **🔄 Retry Logic**: Automatic retry with exponential backoff
-- **🎛️ Multiple Job Types**: Email, notifications, data processing, and more
-- **☸️ Kubernetes Native**: Custom Resource Definitions (CRDs) support
-- **🚨 Dead Letter Queue**: Handle failed jobs gracefully
+- ** Multiple Deployment Modes**: Run standalone or in Kubernetes
+- ** Powerful CLI**: `jobjet` command-line tool for job management
+- ** Distributed Tracing**: Full observability with Jaeger integration
+- ** Metrics & Monitoring**: Prometheus metrics and Grafana dashboards
+- ** High Performance**: Redis-backed queue with efficient job processing
+- ** Retry Logic**: Automatic retry with exponential backoff
+- ** Multiple Job Types**: Email, notifications, data processing, and more
+- ** Kubernetes Native**: Custom Resource Definitions (CRDs) support
+- ** Dead Letter Queue**: Handle failed jobs gracefully
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -60,7 +60,7 @@ JobJet is a modern job queue system that can run both as a standalone applicatio
          └───────────────────────────────────────────┘
 ```
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 - Go 1.21+ 
@@ -103,9 +103,9 @@ go build -o jobjet .
 ./jobjet submit email --payload '{"to": "user@example.com", "subject": "Welcome!", "body": "Hello from JobJet!"}'
 ```
 
-🎉 **Congratulations!** Your JobJet system is now running. Visit http://localhost:16686 to see your job traces in Jaeger!
+ **Congratulations!** Your JobJet system is now running. Visit http://localhost:16686 to see your job traces in Jaeger!
 
-## 📦 Installation
+## Installation
 
 ### Option 1: Standalone Installation
 
@@ -196,7 +196,7 @@ curl -X POST http://localhost:8000/jobs \
 
 
 
-## 📊 Monitoring & Observability
+##  Monitoring & Observability
 
 ### Jaeger Tracing
 
@@ -238,7 +238,7 @@ open http://localhost:3000
 # Login: admin/admin
 ```
 
-## ☸️ Kubernetes Complete Setup & Integration
+##  Kubernetes Complete Setup & Integration
 
 ### Prerequisites
 - Kubernetes cluster (kind, minikube, or cloud)
@@ -417,7 +417,7 @@ kubectl scale deployment jobqueue-app --replicas=3
 <img width="870" height="635" alt="image" src="https://github.com/user-attachments/assets/00df7611-5788-424a-9382-d732946d1720" />
 
 
-## 🎯 JobJet CLI Complete Guide
+##  JobJet CLI Complete Guide
 
 ### Installation & Setup
 ```bash
@@ -618,7 +618,7 @@ queue_info=$(./jobjet list --output json)
 queue_length=$(echo "$queue_info" | jq '.count')
 
 if [ "$queue_length" -gt 100 ]; then
-  echo "⚠️  WARNING: Queue length is $queue_length"
+  echo " WARNING: Queue length is $queue_length"
   # Scale workers
   kubectl scale deployment jobqueue-worker --replicas=10
 fi
@@ -626,7 +626,7 @@ fi
 # Check for failed jobs
 failed_jobs=$(./jobjet list --output json | jq '.jobs[] | select(.status == "failed")')
 if [ -n "$failed_jobs" ]; then
-  echo "❌ Failed jobs detected:"
+  echo "Failed jobs detected:"
   echo "$failed_jobs" | jq -r '.id'
 fi
 ```
@@ -932,7 +932,7 @@ JobJet supports multiple job types out of the box:
    }
    ```
 
-## 📚 API Reference
+## API Reference
 
 ### Submit Job
 ```http
@@ -975,7 +975,7 @@ GET /debug/jobqueue
 GET /health
 ```
 
-## 🚨 Troubleshooting
+##  Troubleshooting
 
 ### Common Issues
 
@@ -1043,7 +1043,7 @@ kubectl get jobdefinitions
    curl http://localhost:2112/metrics | grep jobqueue
    ```
 
-## 🏃‍♂️ Performance Tuning
+## Performance Tuning
 
 ### Redis Configuration
 ```bash
@@ -1069,7 +1069,7 @@ kubectl scale deployment jobqueue-worker --replicas=5
 kubectl autoscale deployment jobqueue-worker --min=2 --max=10 --cpu-percent=70
 ```
 
-## 🤝 Contributing
+##  Contributing
 
 We welcome contributions! Here's how to get started:
 
@@ -1094,7 +1094,7 @@ goimports -w .
 golangci-lint run
 ```
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 

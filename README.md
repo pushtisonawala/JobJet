@@ -414,6 +414,8 @@ kubectl autoscale deployment jobqueue-worker \
 # Scale the API service
 kubectl scale deployment jobqueue-app --replicas=3
 ```
+<img width="870" height="635" alt="image" src="https://github.com/user-attachments/assets/00df7611-5788-424a-9382-d732946d1720" />
+
 
 ## 🎯 JobJet CLI Complete Guide
 

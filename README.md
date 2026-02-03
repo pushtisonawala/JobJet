@@ -1120,4 +1120,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with ❤️ using Go, Kubernetes, and modern observability tools.**
 
->  **Tip:** Start with the Quick Start guide, then follow the Kubernetes, CLI, and Jaeger sections for complete setup!
+> 💡 **Tip:** Start with the Quick Start guide, then follow the Kubernetes, CLI, and Jaeger sections for complete setup!
